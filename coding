@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>StudyPlan - Pengatur Tugas & Jadwal Mahasiswa (Prototype Hub)</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts: Inter -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            babyblue: {
+              DEFAULT: '#89CFF0',
+              dark: '#3A9BD5',
+              darker: '#1E6898',
+              light: '#E8F6FD',
+              soft: '#F5F9FC',
+            },
+            diff: {
+              easyBg: '#E6F4EA', easyText: '#137333',
+              medBg: '#FEF7E0', medText: '#B06000',
+              hardBg: '#FCE8E6', hardText: '#C5221F',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 9999px; }
+    .dark ::-webkit-scrollbar-thumb { background: #334155; }
+    
+    /* Device Frames & Shadows */
+    .laptop-frame {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 12px #1e293b;
+      border-radius: 20px;
+    }
+    .hp-frame {
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.3), 0 0 0 10px #0f172a;
+      border-radius: 36px;
+    }
+    .hp-notch {
+      width: 120px;
+      height: 24px;
+      background: #0f172a;
+      border-bottom-left-radius: 14px;
+      border-bottom-right-radius: 14px;
+    }
+    
+    /* Hide scrollbars for slick horizontal scroll */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body id="appBody" class="bg-slate-100 dark:bg-[#0A121A] text-slate-800 dark:text-slate-100 font-sans h-full flex flex-col overflow-hidden transition-colors duration-300">
+
+  <!-- ==========================================
+       TOP CONTROL TOOLBAR (PRESENTATION HUB)
+       ========================================== -->
+  <header id="topBar" class="bg-white dark:bg-[#152331] border-b border-slate-200 dark:border-slate-800 px-4 py-3 flex-shrink-0 z-30 shadow-sm transition-colors duration-300">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Logo & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-babyblue flex items-center justify-center text-babyblue-dark shadow-sm">
+          <i data-lucide="calendar-check" class="w-5 h-5 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <h1 class="font-bold text-base leading-tight flex items-center gap-2 text-slate-900 dark:text-white">
+            StudyPlan 
+            <span class="text-xs bg-babyblue-light text-babyblue-dark dark:bg-slate-800 dark:text-babyblue font-semibold px-2 py-0.5 rounded-full border border-babyblue/30">
+              Prototype Hub
+            </span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Pengatur Tugas & Jadwal Mahasiswa</p>
+        </div>
+      </div>
+
+      <!-- Center Controls: View Modes & Screen Selector -->
+      <div class="flex items-center gap-2 flex-wrap">
+        
+        <!-- View Mode Switcher -->
+        <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center text-xs font-medium border border-slate-200 dark:border-slate-700">
+          <button id="btnViewBoth" onclick="setViewMode('both')" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-white dark:bg-slate-700 shadow-sm text-babyblue-dark dark:text-babyblue font-semibold">
+            <i data-lucide="columns" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Mode</span> Bandingkan
+          </button>
+          <button id="btnViewLaptop" onclick="setViewMode('laptop')" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+            <i data-lucide="laptop" class="w-3.5 h-3.5"></i>
+            Laptop <span class="text-[10px] opacity-75">(1440px)</span>
+          </button>
+          <button id="btnViewHP" onclick="setViewMode('hp')" class="px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+            HP <span class="text-[10px] opacity-75">(390px)</span>
+          </button>
+        </div>
+
+        <!-- Screen Selector Dropdown -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-slate-500 dark:text-slate-400 hidden md:inline">Layar:</span>
+          <select id="screenSelect" onchange="switchScreen(this.value)" class="bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-xs font-semibold rounded-xl px-3 py-2 border-0 outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-babyblue cursor-pointer">
+            <option value="beranda">1. Beranda</option>
+            <option value="matakuliah">2. Mata Kuliah</option>
+            <option value="tugas">3. Daftar Tugas</option>
+            <option value="tambah_tugas">4. Tambah / Ubah Tugas</option>
+            <option value="jadwal">5. Jadwal</option>
+            <option value="pengingat">6. Pengingat</option>
+            <option value="pengaturan">7. Pengaturan / Lainnya</option>
+          </select>
+        </div>
+
+      </div>
+
+      <!-- Right Controls: Utilities & Dark Mode -->
+      <div class="flex items-center gap-2">
+        
+        <!-- Zoom Controls -->
+        <div class="hidden xl:flex items-center bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-1 text-xs text-slate-700 dark:text-slate-300">
+          <button onclick="adjustZoom(-0.05)" class="p-1 hover:text-babyblue-dark dark:hover:text-babyblue" title="Zoom Out"><i data-lucide="zoom-out" class="w-3.5 h-3.5"></i></button>
+          <span id="zoomVal" class="px-1.5 font-mono text-[11px]">85%</span>
+          <button onclick="adjustZoom(0.05)" class="p-1 hover:text-babyblue-dark dark:hover:text-babyblue" title="Zoom In"><i data-lucide="zoom-in" class="w-3.5 h-3.5"></i></button>
+        </div>
+
+        <!-- Data Reset/Seed Demo -->
+        <button onclick="resetDemoData()" class="p-2 text-slate-500 hover:text-slate-700 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Reset Data Demo">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Global Dark Mode Toggle -->
+        <button onclick="toggleDarkMode()" class="p-2 text-slate-600 dark:text-amber-400 hover:text-amber-500 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Toggle Mode Gelap / Terang">
+          <i data-lucide="moon" class="w-4 h-4 hidden dark:block"></i>
+          <i data-lucide="sun" class="w-4 h-4 block dark:hidden"></i>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- Notification Toast Container -->
+  <div id="toastContainer" class="fixed top-16 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Global Modal Container -->
+  <div id="globalModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div id="modalContent" class="bg-white dark:bg-[#152331] rounded-2xl max-w-md w-full p-6 shadow-2xl transform transition-all border border-slate-100 dark:border-slate-800">
+      <!-- Injected via JS -->
+    </div>
+  </div>
+
+  <!-- ==========================================
+       MAIN WORKSPACE / DUAL DEVICE CONTAINER
+       ========================================== -->
+  <main id="mainCanvas" class="flex-1 bg-slate-200/70 dark:bg-[#0A121A] overflow-auto p-4 md:p-8 flex items-center justify-center relative transition-colors duration-300">
+    
+    <div id="viewportScaler" class="transition-all duration-300 transform origin-top flex flex-col xl:flex-row items-center xl:items-start justify-center gap-8 max-w-full">
+      
+      <!-- --------------------------------------
+           1. LAPTOP MOCKUP FRAME (1440px target)
+           -------------------------------------- -->
+      <div id="laptopContainer" class="laptop-frame bg-slate-900 w-[1280px] max-w-full h-[760px] flex flex-col overflow-hidden transition-all duration-300 border border-slate-700/50">
+        
+        <!-- Laptop Window Header / Titlebar -->
+        <div class="bg-slate-800 dark:bg-slate-950 border-b border-slate-700/60 px-4 py-2.5 flex items-center justify-between text-slate-400 text-xs shrink-0">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+            <span class="ml-2 font-mono text-[11px] text-slate-400 flex items-center gap-1">
+              <i data-lucide="lock" class="w-3 h-3 text-emerald-400"></i> https://studyplan.app/student
+            </span>
+          </div>
+          <div class="flex items-center gap-3 font-medium">
+            <span class="bg-slate-700 dark:bg-slate-800 text-slate-300 px-2.5 py-0.5 rounded text-[10px]">LAPTOP VIEW (1440px)</span>
+          </div>
+        </div>
+
+        <!-- Laptop View Screen Inner App Container -->
+        <div id="laptopAppRoot" class="flex-1 bg-[#F5F9FC] dark:bg-[#0F1A24] text-[#1F2A37] dark:text-[#F8FAFC] flex overflow-hidden relative transition-colors duration-300">
+          <!-- Dynamically Rendered Laptop Layout -->
+        </div>
+
+      </div>
+
+      <!-- --------------------------------------
+           2. MOBILE HP MOCKUP FRAME (390px target)
+           -------------------------------------- -->
+      <div id="hpContainer" class="hp-frame bg-slate-950 w-[390px] h-[760px] flex flex-col relative overflow-hidden transition-all duration-300 shrink-0 border border-slate-800">
+        
+        <!-- HP Top Notch / Island -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 z-40 hp-notch flex items-end justify-center pb-1">
+          <div class="w-12 h-1 bg-slate-800 rounded-full"></div>
+        </div>
+
+        <!-- HP Status Bar -->
+        <div id="hpStatusBar" class="pt-2 px-6 pb-1 flex justify-between items-center text-[11px] font-semibold text-slate-600 dark:text-slate-400 bg-white dark:bg-[#152331] border-b border-slate-100 dark:border-slate-800/80 z-30 transition-colors duration-300">
+          <span>09:41</span>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="wifi" class="w-3 h-3"></i>
+            <i data-lucide="battery-charging" class="w-3.5 h-3.5"></i>
+          </div>
+        </div>
+
+        <!-- HP Screen Inner App Container -->
+        <div id="hpAppRoot" class="flex-1 bg-[#F5F9FC] dark:bg-[#0F1A24] text-[#1F2A37] dark:text-[#F8FAFC] flex flex-col overflow-hidden relative transition-colors duration-300">
+          <!-- Dynamically Rendered HP Layout -->
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ==========================================
+       SYSTEM STATE & APPLICATION LOGIC (JS)
+       ========================================== -->
+  <script>
+    // ----------------------------------------------------
+    // INITIAL SYSTEM STATE & LOCALSTORAGE DATA MANAGEMENT
+    // Implementation of PenyimpananJSON (matakuliah, tugas, jadwal, pengingat)
+    // ----------------------------------------------------
+    const STORAGE_KEY = 'studyplan_data_v2';
+    
+    // Default Preset Data
+    const DEFAULT_DATA = {
+      courses: [
+        { id: 'M01', name: 'Algoritma & Pemrograman' },
+        { id: 'M02', name: 'Basis Data Lanjut' },
+        { id: 'M03', name: 'Interaksi Manusia & Komputer' },
+        { id: 'M04', name: 'Matematika Diskrit' },
+        { id: 'M05', name: 'Jaringan Komputer' }
+      ],
+      tasks: [
+        {
+          id: 'T001',
+          courseId: 'M02',
+          title: 'Tugas Linked List & SQL',
+          source: 'e-learning',
+          deadline: getRelativeDateTime(1, 23, 59),
+          difficulty: 3,
+          status: 'belum'
+        },
+        {
+          id: 'T002',
+          courseId: 'M03',
+          title: 'Paper UX Research Prototype',
+          source: 'Google Classroom',
+          deadline: getRelativeDateTime(3, 17, 0),
+          difficulty: 2,
+          status: 'belum'
+        },
+        {
+          id: 'T003',
+          courseId: 'M04',
+          title: 'Kuis Singkat Teori Graf',
+          source: 'VLM Kampus',
+          deadline: getRelativeDateTime(0, 20, 0),
+          difficulty: 1,
+          status: 'belum'
+        }
+      ],
+      schedules: [
+        {
+          id: 'J001',
+          courseId: 'M02',
+          title: 'Kuliah Basis Data Lanjut',
+          date: getRelativeDateOnly(0),
+          startTime: '08:00',
+          endTime: '10:30'
+        },
+        {
+          id: 'J002',
+          courseId: 'M05',
+          title: 'Praktikum Jaringan Komputer',
+          date: getRelativeDateOnly(0),
+          startTime: '13:00',
+          endTime: '15:30'
+        },
+        {
+          id: 'J003',
+          courseId: 'M03',
+          title: 'Kuliah IMK Prototype Review',
+          date: getRelativeDateOnly(2),
+          startTime: '10:00',
+          endTime: '12:30'
+        }
+      ],
+      reminders: []
+    };
+
+    let appData = loadAppData();
+    let currentScreen = 'beranda';
+    let viewMode = 'both';
+    let currentZoom = 0.85;
+    let isGlobalDarkMode = false;
+    let scheduleTab = 'minggu'; // Tab aktif Jadwal: 'hari' atau 'minggu'
+
+    function getRelativeDateTime(daysOffset, hours = 23, mins = 59) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      d.setHours(hours, mins, 0, 0);
+      return d.toISOString().slice(0, 16);
+    }
+
+    function getRelativeDateOnly(daysOffset) {
+      const d = new Date();
+      d.setDate(d.getDate() + daysOffset);
+      return d.toISOString().split('T')[0];
+    }
+
+    function loadAppData() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      let data = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULT_DATA));
+      data = runAutoCleanup(data); // PembersihOtomatis.jalankan_saat_aplikasi_dibuka()
+      saveAppData(data);
+      return data;
+    }
+
+    function saveAppData(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    }
+
+    // ----------------------------------------------------
+    // PembersihOtomatis & AntrianPrioritas Min-Heap Implementation
+    // ----------------------------------------------------
+    function runAutoCleanup(data) {
+      const now = new Date();
+
+      // hapus_tugas_lewat_tenggat()
+      data.tasks = data.tasks.filter(t => {
+        const d = new Date(t.deadline);
+        return d >= now || t.status === 'selesai';
+      });
+
+      // hapus_jadwal_lewat()
+      data.schedules = data.schedules.filter(s => {
+        const schDate = new Date(`${s.date}T${s.endTime || '23:59'}`);
+        return schDate >= now;
+      });
+
+      // AntrianPengingat (Min-Heap update H-2)
+      data.reminders = [];
+      data.tasks.forEach(task => {
+        if (task.status === 'belum') {
+          const deadlineDate = new Date(task.deadline);
+          let reminderTime = new Date(deadlineDate.getTime() - (2 * 24 * 60 * 60 * 1000));
+          
+          let note = "Pengingat otomatis H-2 sebelum tenggat";
+          if (reminderTime < now) {
+            reminderTime = new Date(now.getTime() + 60000);
+            note = "Pengingat aktif (H-2 sudah lewat)";
+          }
+
+          data.reminders.push({
+            id: `R-${task.id}`,
+            taskId: task.id,
+            title: task.title,
+            courseId: task.courseId,
+            time: reminderTime.toISOString().slice(0, 16),
+            deadline: task.deadline,
+            note: note
+          });
+        }
+      });
+
+      // Sort AntrianPengingat oleh waktu_pengingat terdekat
+      data.reminders.sort((a, b) => new Date(a.time) - new Date(b.time));
+
+      return data;
+    }
+
+    // AntrianPrioritas (Min-Heap) -> Urutan: Tenggat terdekat, lalu Kesulitan tertinggi (3 > 2 > 1)
+    function getSortedTasks(taskList) {
+      return [...taskList].sort((a, b) => {
+        const dA = new Date(a.deadline);
+        const dB = new Date(b.deadline);
+        if (dA.getTime() !== dB.getTime()) {
+          return dA - dB;
+        }
+        return b.difficulty - a.difficulty;
+      });
+    }
+
+    function switchScreen(screenName) {
+      currentScreen = screenName;
+      document.getElementById('screenSelect').value = screenName;
+      renderAllViews();
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      const laptopC = document.getElementById('laptopContainer');
+      const hpC = document.getElementById('hpContainer');
+      const btnBoth = document.getElementById('btnViewBoth');
+      const btnLaptop = document.getElementById('btnViewLaptop');
+      const btnHP = document.getElementById('btnViewHP');
+
+      [btnBoth, btnLaptop, btnHP].forEach(btn => {
+        btn.className = "px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white";
+      });
+
+      if (mode === 'both') {
+        laptopC.classList.remove('hidden');
+        hpC.classList.remove('hidden');
+        btnBoth.className = "px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-white dark:bg-slate-700 shadow-sm text-babyblue-dark dark:text-babyblue font-semibold";
+      } else if (mode === 'laptop') {
+        laptopC.classList.remove('hidden');
+        hpC.classList.add('hidden');
+        btnLaptop.className = "px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-white dark:bg-slate-700 shadow-sm text-babyblue-dark dark:text-babyblue font-semibold";
+      } else if (mode === 'hp') {
+        laptopC.classList.add('hidden');
+        hpC.classList.remove('hidden');
+        btnHP.className = "px-3 py-1.5 rounded-lg transition flex items-center gap-1.5 bg-white dark:bg-slate-700 shadow-sm text-babyblue-dark dark:text-babyblue font-semibold";
+      }
+    }
+
+    function adjustZoom(delta) {
+      currentZoom = Math.min(Math.max(0.5, currentZoom + delta), 1.2);
+      document.getElementById('zoomVal').innerText = `${Math.round(currentZoom * 100)}%`;
+      document.getElementById('viewportScaler').style.transform = `scale(${currentZoom})`;
+    }
+
+    function toggleDarkMode() {
+      isGlobalDarkMode = !isGlobalDarkMode;
+      
+      const htmlEl = document.documentElement;
+      if (isGlobalDarkMode) {
+        htmlEl.classList.add('dark');
+      } else {
+        htmlEl.classList.remove('dark');
+      }
+
+      renderAllViews();
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      toast.className = `px-4 py-3 rounded-xl shadow-xl text-xs font-semibold flex items-center gap-2.5 transition-all transform translate-y-2 bg-slate-900 text-white border border-slate-700 pointer-events-auto max-w-sm`;
+      
+      const icon = type === 'success' ? 'check-circle' : 'info';
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 text-babyblue shrink-0"></i> <span>${message}</span>`;
+      
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-[-10px]');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function resetDemoData() {
+      appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+      appData = runAutoCleanup(appData);
+      saveAppData(appData);
+      renderAllViews();
+      showToast('Data demo berhasil di-reset ke kondisi awal.', 'success');
+    }
+
+    // CRUD ACTIONS (Sesuai Diagram Kelas UML)
+    function addOrUpdateCourse(id, name) {
+      if (!name || !name.trim()) return;
+      if (id) {
+        const c = appData.courses.find(x => x.id === id);
+        if (c) c.name = name;
+      } else {
+        const newId = `M0${appData.courses.length + 1}`;
+        appData.courses.push({ id: newId, name: name });
+      }
+      appData = runAutoCleanup(appData);
+      saveAppData(appData);
+      renderAllViews();
+      showToast('Mata kuliah berhasil disimpan.', 'success');
+    }
+
+    function deleteCourse(id) {
+      openModal('Hapus Mata Kuliah?', 'Semua tugas dan jadwal yang berhubungan dengan mata kuliah ini akan terpengaruh.', () => {
+        appData.courses = appData.courses.filter(c => c.id !== id);
+        appData = runAutoCleanup(appData);
+        saveAppData(appData);
+        renderAllViews();
+        showToast('Mata kuliah dihapus.', 'info');
+      });
+    }
+
+    function fillCourseEditForm(id, name) {
+      const laptopIdInput = document.getElementById('courseIdInput');
+      const laptopNameInput = document.getElementById('courseNameInput');
+      const laptopTitle = document.getElementById('courseFormTitle');
+      if (laptopIdInput && laptopNameInput) {
+        laptopIdInput.value = id;
+        laptopNameInput.value = name;
+        if (laptopTitle) laptopTitle.innerText = "Ubah Mata Kuliah";
+      }
+
+      const hpIdInput = document.getElementById('hpCourseIdInput');
+      const hpNameInput = document.getElementById('hpCourseNameInput');
+      const hpTitle = document.getElementById('hpCourseFormTitle');
+      if (hpIdInput && hpNameInput) {
+        hpIdInput.value = id;
+        hpNameInput.value = name;
+        if (hpTitle) hpTitle.innerText = "Ubah Mata Kuliah";
+      }
+    }
+
+    function resetCourseForm() {
+      fillCourseEditForm('', '');
+      const laptopTitle = document.getElementById('courseFormTitle');
+      if (laptopTitle) laptopTitle.innerText = "Tambah Mata Kuliah";
+      const hpTitle = document.getElementById('hpCourseFormTitle');
+      if (hpTitle) hpTitle.innerText = "Tambah Mata Kuliah";
+    }
+
+    function handleCourseFormSubmit(e) {
+      e.preventDefault();
+      const id = document.getElementById('courseIdInput')?.value || document.getElementById('hpCourseIdInput')?.value || '';
+      const name = document.getElementById('courseNameInput')?.value || document.getElementById('hpCourseNameInput')?.value || '';
+      addOrUpdateCourse(id, name);
+      resetCourseForm();
+    }
+
+    function handleTaskFormSubmit(e) {
+      e.preventDefault();
+      const courseId = document.getElementById('taskCourseSelect').value;
+      const title = document.getElementById('taskTitleInput').value;
+      const source = document.getElementById('taskSourceInput').value;
+      const deadline = document.getElementById('taskDeadlineInput').value;
+      
+      const diffRadio = document.querySelector('input[name="difficulty"]:checked');
+      const diffSelect = document.getElementById('taskDiffSelect');
+      const difficulty = parseInt(diffRadio ? diffRadio.value : (diffSelect ? diffSelect.value : '1'));
+
+      if (new Date(deadline) < new Date()) {
+        showToast('Validasi Gagal: Tenggat waktu tidak boleh di masa lalu.', 'info');
+        return;
+      }
+
+      addOrUpdateTask({
+        id: '',
+        courseId,
+        title,
+        source,
+        deadline,
+        difficulty,
+        status: 'belum'
+      });
+    }
+
+    function addOrUpdateTask(taskData) {
+      const isEdit = !!taskData.id;
+      if (isEdit) {
+        const idx = appData.tasks.findIndex(t => t.id === taskData.id);
+        if (idx !== -1) appData.tasks[idx] = taskData;
+      } else {
+        taskData.id = `T0${appData.tasks.length + 10}`;
+        appData.tasks.push(taskData);
+      }
+
+      appData = runAutoCleanup(appData);
+      saveAppData(appData);
+      renderAllViews();
+      showToast('Tugas berhasil disimpan. Pengingat H-2 dibuat otomatis.', 'success');
+      switchScreen('tugas');
+    }
+
+    function toggleTaskStatus(taskId) {
+      const task = appData.tasks.find(t => t.id === taskId);
+      if (task) {
+        task.status = task.status === 'selesai' ? 'belum' : 'selesai';
+        appData = runAutoCleanup(appData);
+        saveAppData(appData);
+        renderAllViews();
+        showToast(task.status === 'selesai' ? 'Tugas ditandai selesai!' : 'Tugas diubah menjadi belum selesai.', 'success');
+      }
+    }
+
+    function deleteTask(taskId) {
+      openModal('Hapus Tugas?', 'Tugas beserta pengingat otomatisnya akan dihapus permanen.', () => {
+        appData.tasks = appData.tasks.filter(t => t.id !== taskId);
+        appData = runAutoCleanup(appData);
+        saveAppData(appData);
+        renderAllViews();
+        showToast('Tugas & pengingat berhasil dihapus.', 'info');
+      });
+    }
+
+    function addOrUpdateSchedule(schData) {
+      if (schData.id) {
+        const idx = appData.schedules.findIndex(s => s.id === schData.id);
+        if (idx !== -1) appData.schedules[idx] = schData;
+      } else {
+        schData.id = `J0${appData.schedules.length + 10}`;
+        appData.schedules.push(schData);
+      }
+      appData = runAutoCleanup(appData);
+      saveAppData(appData);
+      renderAllViews();
+      showToast('Jadwal kuliah berhasil disimpan.', 'success');
+      switchScreen('jadwal');
+    }
+
+    function deleteSchedule(schId) {
+      openModal('Hapus Jadwal?', 'Jadwal kuliah ini akan dihapus dari agenda.', () => {
+        appData.schedules = appData.schedules.filter(s => s.id !== schId);
+        appData = runAutoCleanup(appData);
+        saveAppData(appData);
+        renderAllViews();
+        showToast('Jadwal dihapus.', 'info');
+      });
+    }
+
+    // MODAL FORM CRUD JADWAL KULIAH (Laptop & HP)
+    function openScheduleModal(schId = null) {
+      const isEdit = !!schId;
+      let sData = { id: '', title: '', courseId: '', date: getRelativeDateOnly(0), startTime: '08:00', endTime: '10:00' };
+      if (isEdit) {
+        const found = appData.schedules.find(s => s.id === schId);
+        if (found) sData = { ...found };
+      }
+
+      const modal = document.getElementById('globalModal');
+      const content = document.getElementById('modalContent');
+      content.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-babyblue-light dark:bg-slate-800 text-babyblue-dark dark:text-babyblue flex items-center justify-center shrink-0">
+            <i data-lucide="calendar-plus" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slate-800 dark:text-slate-100">${isEdit ? 'Ubah Jadwal Kuliah' : 'Tambah Jadwal Kuliah'}</h3>
+        </div>
+        <form onsubmit="handleScheduleFormSubmit(event, '${sData.id}')" class="space-y-3.5 text-xs">
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Nama Kegiatan / Perkuliahan <span class="text-rose-500">*</span></label>
+            <input type="text" id="schTitleInput" value="${sData.title}" required placeholder="Contoh: Kuliah IMK Praktikum" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+          </div>
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Mata Kuliah (Opsional)</label>
+            <select id="schCourseSelect" class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+              <option value="">-- Umum / Non-MK --</option>
+              ${appData.courses.map(c => `<option value="${c.id}" ${c.id === sData.courseId ? 'selected' : ''}>${c.name}</option>`).join('')}
+            </select>
+          </div>
+          <div>
+            <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Tanggal Perkuliahan <span class="text-rose-500">*</span></label>
+            <input type="date" id="schDateInput" value="${sData.date}" required class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Jam Mulai <span class="text-rose-500">*</span></label>
+              <input type="time" id="schStartInput" value="${sData.startTime}" required class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+            </div>
+            <div>
+              <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Jam Selesai <span class="text-rose-500">*</span></label>
+              <input type="time" id="schEndInput" value="${sData.endTime}" required class="w-full px-3 py-2 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-2 pt-3">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Batal</button>
+            <button type="submit" class="px-4 py-2 rounded-xl font-bold bg-babyblue hover:bg-babyblue-dark text-slate-900 transition">Simpan Jadwal</button>
+          </div>
+        </form>
+      `;
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function handleScheduleFormSubmit(e, schId) {
+      e.preventDefault();
+      const title = document.getElementById('schTitleInput').value;
+      const courseId = document.getElementById('schCourseSelect').value;
+      const date = document.getElementById('schDateInput').value;
+      const startTime = document.getElementById('schStartInput').value;
+      const endTime = document.getElementById('schEndInput').value;
+
+      if (startTime >= endTime) {
+        showToast('Validasi Gagal: Jam selesai harus setelah jam mulai.', 'info');
+        return;
+      }
+
+      addOrUpdateSchedule({ id: schId || null, title, courseId, date, startTime, endTime });
+      closeModal();
+    }
+
+    // CRUD PENGINGAT (UML: tambah_pengingat, ubah_pengingat, hapus_pengingat)
+    function openReminderModal(reminderId = null) {
+      const isEdit = !!reminderId;
+      let rData = { id: '', taskId: '', title: '', courseId: '', time: getRelativeDateTime(0, 18, 0) };
+      if (isEdit) {
+        const found = appData.reminders.find(r => r.id === reminderId);
+        if (found) rData = { ...found };
+      }
+
+      const modal = document.getElementById('globalModal');
+      const content = document.getElementById('modalContent');
+      content.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <i data-lucide="bell" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slate-800 dark:text-slate-100">${isEdit ? 'Ubah Waktu Pengingat' : 'Tambah Pengingat Kustom'}</h3>
+        </div>
+        <form onsubmit="handleReminderFormSubmit(event, '${rData.id}')" class="space-y-4">
+          ${!isEdit ? `
+            <div>
+              <label class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Pilih Tugas Terkait</label>
+              <select id="reminderTaskSelect" required class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-babyblue outline-none">
+                ${appData.tasks.filter(t => t.status === 'belum').map(t => `<option value="${t.id}">${t.title}</option>`).join('')}
+              </select>
+            </div>
+          ` : `
+            <div>
+              <p class="text-xs font-bold text-slate-800 dark:text-slate-100">${rData.title}</p>
+              <p class="text-[11px] text-slate-400">${getCourseName(rData.courseId)}</p>
+            </div>
+          `}
+          <div>
+            <label class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Waktu Alarm Pengingat <span class="text-rose-500">*</span></label>
+            <input type="datetime-local" id="reminderTimeInput" value="${rData.time}" required class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-babyblue outline-none">
+          </div>
+          <div class="flex items-center justify-end gap-2 pt-2">
+            <button type="button" onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Batal</button>
+            <button type="submit" class="px-4 py-2 rounded-xl text-xs font-bold bg-babyblue hover:bg-babyblue-dark text-slate-900 transition">Simpan Pengingat</button>
+          </div>
+        </form>
+      `;
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function handleReminderFormSubmit(e, reminderId) {
+      e.preventDefault();
+      const timeVal = document.getElementById('reminderTimeInput').value;
+      if (reminderId) {
+        // Edit Pengingat
+        const r = appData.reminders.find(item => item.id === reminderId);
+        if (r) {
+          r.time = timeVal;
+          r.note = "Pengingat disunting manual oleh pengguna";
+        }
+      } else {
+        // Tambah Pengingat Baru
+        const taskId = document.getElementById('reminderTaskSelect').value;
+        const task = appData.tasks.find(t => t.id === taskId);
+        if (task) {
+          appData.reminders.push({
+            id: `R-CUSTOM-${Date.now()}`,
+            taskId: task.id,
+            title: task.title,
+            courseId: task.courseId,
+            time: timeVal,
+            deadline: task.deadline,
+            note: "Pengingat kustom pengguna"
+          });
+        }
+      }
+      appData.reminders.sort((a, b) => new Date(a.time) - new Date(b.time));
+      saveAppData(appData);
+      renderAllViews();
+      closeModal();
+      showToast('Pengingat berhasil diperbarui.', 'success');
+    }
+
+    function deleteReminder(reminderId) {
+      openModal('Hapus Pengingat?', 'Pengingat ini akan dihapus secara manual.', () => {
+        appData.reminders = appData.reminders.filter(r => r.id !== reminderId);
+        saveAppData(appData);
+        renderAllViews();
+        showToast('Pengingat dihapus.', 'info');
+      });
+    }
+
+    function openModal(title, message, onConfirm) {
+      const modal = document.getElementById('globalModal');
+      const content = document.getElementById('modalContent');
+      content.innerHTML = `
+        <div class="flex items-center gap-3 text-rose-500 mb-3">
+          <div class="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-950/50 flex items-center justify-center shrink-0">
+            <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+          </div>
+          <h3 class="font-bold text-base text-slate-800 dark:text-slate-100">${title}</h3>
+        </div>
+        <p class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed mb-6">${message}</p>
+        <div class="flex items-center justify-end gap-2">
+          <button onclick="closeModal()" class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 text-slate-700 dark:text-slate-200 transition">Batal</button>
+          <button id="modalConfirmBtn" class="px-4 py-2 rounded-xl text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white transition">Ya, Hapus</button>
+        </div>
+      `;
+      modal.classList.remove('hidden');
+      lucide.createIcons();
+      document.getElementById('modalConfirmBtn').onclick = () => {
+        onConfirm();
+        closeModal();
+      };
+    }
+
+    function closeModal() {
+      document.getElementById('globalModal').classList.add('hidden');
+    }
+
+    function getCourseName(courseId) {
+      const c = appData.courses.find(x => x.id === courseId);
+      return c ? c.name : 'Umum / Non-MK';
+    }
+
+    function formatDateTime(dtStr) {
+      if (!dtStr) return '-';
+      const d = new Date(dtStr);
+      return d.toLocaleString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    }
+
+    function formatDateOnly(dStr) {
+      if (!dStr) return '-';
+      const d = new Date(dStr);
+      return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+
+    function getDifficultyBadgeHtml(level) {
+      if (level == 1) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#E6F4EA] text-[#137333] border border-emerald-200">Mudah (1)</span>`;
+      if (level == 2) return `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#FEF7E0] text-[#B06000] border border-amber-200">Sedang (2)</span>`;
+      return `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#FCE8E6] text-[#C5221F] border border-rose-200">Sulit (3)</span>`;
+    }
+
+    function getStatusBadgeHtml(status, deadlineStr) {
+      if (status === 'selesai') return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">Selesai</span>`;
+      
+      const deadline = new Date(deadlineStr);
+      const now = new Date();
+      const diffHours = (deadline - now) / (1000 * 60 * 60);
+
+      if (diffHours <= 48 && diffHours >= 0) {
+        return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-orange-100 text-orange-700 dark:bg-orange-950/60 dark:text-orange-300 animate-pulse">H-${Math.ceil(diffHours/24)} Tenggat!</span>`;
+      }
+      return `<span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">Belum</span>`;
+    }
+
+    // ----------------------------------------------------
+    // LAPTOP RENDER HELPER FUNCTIONS
+    // ----------------------------------------------------
+    function renderLaptopLayout(screen) {
+      const todayDateStr = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+      
+      return `
+        <!-- Fixed Left Sidebar (Laptop 1440px Rule) -->
+        <aside class="w-64 bg-white dark:bg-[#152331] border-r border-slate-200 dark:border-slate-800 flex flex-col shrink-0">
+          <div class="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-babyblue flex items-center justify-center text-babyblue-dark font-bold shadow-md shadow-babyblue/20">
+              <i data-lucide="calendar-check" class="w-6 h-6 stroke-[2.5]"></i>
+            </div>
+            <div>
+              <h2 class="font-extrabold text-lg leading-tight tracking-tight text-slate-900 dark:text-white">StudyPlan</h2>
+              <p class="text-[11px] font-medium text-slate-400">Dashboard Mahasiswa</p>
+            </div>
+          </div>
+
+          <!-- Navigation Links -->
+          <nav class="p-3 space-y-1 flex-1 text-xs font-semibold">
+            ${renderLaptopNavItem('beranda', 'layout-dashboard', 'Beranda', screen)}
+            ${renderLaptopNavItem('matakuliah', 'book-open', 'Mata Kuliah', screen, appData.courses.length)}
+            ${renderLaptopNavItem('tugas', 'check-square', 'Daftar Tugas', screen, appData.tasks.filter(t => t.status === 'belum').length)}
+            ${renderLaptopNavItem('jadwal', 'calendar', 'Jadwal Kuliah', screen, appData.schedules.length)}
+            ${renderLaptopNavItem('pengingat', 'bell', 'Pengingat', screen, appData.reminders.length)}
+            ${renderLaptopNavItem('pengaturan', 'settings', 'Pengaturan', screen)}
+          </nav>
+        </aside>
+
+        <!-- Laptop Main Area -->
+        <div class="flex-1 flex flex-col overflow-hidden">
+          
+          <!-- Laptop Top Header -->
+          <header class="h-16 bg-white dark:bg-[#152331] border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between shrink-0">
+            <div class="relative w-80">
+              <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+              <input type="text" placeholder="Cari tugas, mata kuliah..." class="w-full pl-9 pr-4 py-2 rounded-xl text-xs bg-slate-100 dark:bg-[#0F1A24] border-0 outline-none text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-babyblue">
+            </div>
+            <div class="flex items-center gap-4">
+              <button onclick="switchScreen('tambah_tugas')" class="px-4 py-2 rounded-xl bg-babyblue hover:bg-babyblue-dark text-slate-900 font-bold text-xs flex items-center gap-2 shadow-sm transition">
+                <i data-lucide="plus" class="w-4 h-4"></i> Tambah Tugas
+              </button>
+              <button onclick="switchScreen('pengingat')" class="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 relative hover:bg-slate-200 transition">
+                <i data-lucide="bell" class="w-4 h-4"></i>
+                ${appData.reminders.length ? `<span class="w-2 h-2 rounded-full bg-rose-500 absolute top-2 right-2"></span>` : ''}
+              </button>
+            </div>
+          </header>
+
+          <!-- Laptop Screen Body -->
+          <main class="flex-1 overflow-auto p-6">
+            ${renderLaptopScreenBody(screen, todayDateStr)}
+          </main>
+        </div>
+      `;
+    }
+
+    function renderLaptopNavItem(key, icon, label, current, badge = 0) {
+      const active = key === current;
+      return `
+        <button onclick="switchScreen('${key}')" class="w-full flex items-center justify-between px-3 py-2.5 rounded-xl transition ${
+          active 
+            ? 'bg-babyblue-light text-babyblue-dark dark:bg-slate-800 dark:text-babyblue font-bold shadow-sm' 
+            : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/60'
+        }">
+          <div class="flex items-center gap-3">
+            <i data-lucide="${icon}" class="w-4 h-4"></i>
+            <span>${label}</span>
+          </div>
+          ${badge > 0 ? `<span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200">${badge}</span>` : ''}
+        </button>
+      `;
+    }
+
+    function renderLaptopScreenBody(screen, todayDateStr) {
+      if (screen === 'beranda') return renderLaptopBeranda(todayDateStr);
+      if (screen === 'matakuliah') return renderLaptopMataKuliah();
+      if (screen === 'tugas') return renderLaptopDaftarTugas();
+      if (screen === 'tambah_tugas') return renderLaptopTambahTugas();
+      if (screen === 'jadwal') return renderLaptopJadwal();
+      if (screen === 'pengingat') return renderLaptopPengingat();
+      if (screen === 'pengaturan') return renderLaptopPengaturan();
+      return '';
+    }
+
+    function renderLaptopBeranda(todayDateStr) {
+      const pendingTasks = appData.tasks.filter(t => t.status === 'belum');
+      const sortedPriorities = getSortedTasks(pendingTasks);
+      const todaySchedules = appData.schedules.filter(s => s.date === getRelativeDateOnly(0));
+
+      return `
+        <div class="space-y-6">
+          <!-- Greeting Header -->
+          <div>
+            <h2 class="text-xl font-bold text-slate-900 dark:text-white">Selamat Datang di StudyPlan 👋</h2>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">${todayDateStr}</p>
+          </div>
+
+          <!-- Summary Cards 4-Column -->
+          <div class="grid grid-cols-4 gap-4">
+            <div class="bg-white dark:bg-[#152331] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between text-slate-500 text-xs">
+                <span>Tugas Belum Selesai</span>
+                <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i>
+              </div>
+              <p class="text-2xl font-black mt-2 text-slate-900 dark:text-white">${pendingTasks.length}</p>
+            </div>
+            
+            <div class="bg-white dark:bg-[#152331] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between text-slate-500 text-xs">
+                <span>Tugas Prioritas Terdekat</span>
+                <i data-lucide="alert-circle" class="w-4 h-4 text-rose-500"></i>
+              </div>
+              <p class="text-xs font-bold truncate mt-3 text-slate-800 dark:text-slate-100">${sortedPriorities[0] ? sortedPriorities[0].title : 'Tidak ada'}</p>
+            </div>
+
+            <div class="bg-white dark:bg-[#152331] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between text-slate-500 text-xs">
+                <span>Jadwal Hari Ini</span>
+                <i data-lucide="calendar" class="w-4 h-4 text-babyblue-dark"></i>
+              </div>
+              <p class="text-2xl font-black mt-2 text-slate-900 dark:text-white">${todaySchedules.length}</p>
+            </div>
+
+            <div class="bg-white dark:bg-[#152331] p-4 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between text-slate-500 text-xs">
+                <span>Pengingat Aktif</span>
+                <i data-lucide="bell" class="w-4 h-4 text-emerald-500"></i>
+              </div>
+              <p class="text-2xl font-black mt-2 text-slate-900 dark:text-white">${appData.reminders.length}</p>
+            </div>
+          </div>
+
+          <!-- Main Dashboard Split: Left Priority Tasks, Right Today's Agenda -->
+          <div class="grid grid-cols-12 gap-6">
+            
+            <!-- Left Column: Tugas Terdekat (Min-Heap Priority) -->
+            <div class="col-span-7 bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="zap" class="w-4 h-4 text-amber-500"></i> Tugas Terdekat (Antrian Prioritas)
+                </h3>
+                <button onclick="switchScreen('tugas')" class="text-xs font-semibold text-babyblue-dark dark:text-babyblue hover:underline">Lihat Semua</button>
+              </div>
+
+              ${sortedPriorities.length === 0 ? `
+                <div class="py-8 text-center text-slate-400 text-xs">Belum ada tugas aktif.</div>
+              ` : `
+                <div class="space-y-3">
+                  ${sortedPriorities.slice(0, 3).map(task => `
+                    <div class="p-3.5 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                      <div class="space-y-1">
+                        <div class="flex items-center gap-2">
+                          <span class="font-bold text-xs text-slate-800 dark:text-slate-100">${task.title}</span>
+                          ${getDifficultyBadgeHtml(task.difficulty)}
+                        </div>
+                        <div class="flex items-center gap-3 text-[11px] text-slate-400">
+                          <span>${getCourseName(task.courseId)}</span>
+                          <span>•</span>
+                          <span>Tenggat: ${formatDateTime(task.deadline)}</span>
+                        </div>
+                      </div>
+                      <button onclick="toggleTaskStatus('${task.id}')" class="p-2 rounded-xl bg-slate-200 dark:bg-slate-800 hover:bg-emerald-500 hover:text-white text-slate-600 dark:text-slate-300 transition">
+                        <i data-lucide="check" class="w-4 h-4"></i>
+                      </button>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+
+            <!-- Right Column: Agenda Hari Ini -->
+            <div class="col-span-5 bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-2">
+                  <i data-lucide="calendar" class="w-4 h-4 text-babyblue-dark"></i> Agenda Hari Ini
+                </h3>
+                <button onclick="openScheduleModal()" class="text-xs font-semibold text-babyblue-dark dark:text-babyblue hover:underline">+ Jadwal</button>
+              </div>
+
+              ${todaySchedules.length === 0 ? `
+                <div class="py-8 text-center text-slate-400 text-xs">Tidak ada jadwal perkuliahan hari ini.</div>
+              ` : `
+                <div class="space-y-3">
+                  ${todaySchedules.map(sch => `
+                    <div class="p-3 rounded-xl border-l-4 border-babyblue-dark bg-slate-50 dark:bg-[#0F1A24] flex items-center justify-between">
+                      <div>
+                        <p class="font-bold text-xs text-slate-800 dark:text-slate-100">${sch.title}</p>
+                        <p class="text-[11px] text-slate-400 mt-0.5">${getCourseName(sch.courseId)} (${sch.startTime} - ${sch.endTime})</p>
+                      </div>
+                      <div class="flex items-center gap-1">
+                        <button onclick="openScheduleModal('${sch.id}')" class="p-1.5 hover:text-babyblue-dark dark:hover:text-babyblue text-slate-400"><i data-lucide="edit-3" class="w-3.5 h-3.5"></i></button>
+                        <button onclick="deleteSchedule('${sch.id}')" class="p-1.5 hover:text-rose-500 text-slate-400"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              `}
+            </div>
+
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLaptopMataKuliah() {
+      return `
+        <div class="grid grid-cols-12 gap-6">
+          <!-- Left Table: Daftar Mata Kuliah -->
+          <div class="col-span-7 bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
+            <div class="flex items-center justify-between mb-4">
+              <div>
+                <h3 class="font-bold text-base text-slate-900 dark:text-white">Daftar Mata Kuliah</h3>
+                <p class="text-xs text-slate-400">Diisi pada awal semester untuk pilihan tugas & jadwal</p>
+              </div>
+            </div>
+
+            ${appData.courses.length === 0 ? `
+              <div class="py-12 text-center space-y-3">
+                <i data-lucide="book-open" class="w-10 h-10 text-slate-300 mx-auto"></i>
+                <p class="text-xs text-slate-500">Belum ada mata kuliah. Isi daftar mata kuliah semestermu dulu.</p>
+              </div>
+            ` : `
+              <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs">
+                  <thead>
+                    <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold">
+                      <th class="pb-3">ID</th>
+                      <th class="pb-3">NAMA MATA KULIAH</th>
+                      <th class="pb-3 text-right">AKSI</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    ${appData.courses.map(c => `
+                      <tr class="hover:bg-slate-50 dark:hover:bg-[#0F1A24] transition">
+                        <td class="py-3 font-mono font-bold text-babyblue-dark">${c.id}</td>
+                        <td class="py-3 font-semibold text-slate-800 dark:text-slate-100">${c.name}</td>
+                        <td class="py-3 text-right">
+                          <div class="flex items-center justify-end gap-1">
+                            <button onclick="fillCourseEditForm('${c.id}', '${c.name}')" class="p-1.5 rounded-lg text-slate-400 hover:text-babyblue-dark dark:hover:text-babyblue"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                            <button onclick="deleteCourse('${c.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                          </div>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+            `}
+          </div>
+
+          <!-- Right Panel: Form Tambah/Ubah Mata Kuliah -->
+          <div class="col-span-5 bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm h-fit">
+            <h4 id="courseFormTitle" class="font-bold text-sm mb-4 text-slate-900 dark:text-white">Tambah Mata Kuliah</h4>
+            <form onsubmit="handleCourseFormSubmit(event)" class="space-y-4">
+              <input type="hidden" id="courseIdInput">
+              <div>
+                <label class="block text-xs font-semibold mb-1 text-slate-700 dark:text-slate-300">Nama Mata Kuliah <span class="text-rose-500">*</span></label>
+                <input type="text" id="courseNameInput" required placeholder="Contoh: Pemrograman Web" class="w-full px-3 py-2 rounded-xl text-xs bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+              </div>
+              <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 py-2.5 rounded-xl font-bold text-xs bg-babyblue hover:bg-babyblue-dark text-slate-900 transition">Simpan</button>
+                <button type="button" onclick="resetCourseForm()" class="px-4 py-2.5 rounded-xl font-semibold text-xs bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200">Reset</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLaptopDaftarTugas() {
+      const sortedTasks = getSortedTasks(appData.tasks);
+
+      return `
+        <div class="bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-base text-slate-900 dark:text-white">Daftar Tugas Mahasiswa</h3>
+              <p class="text-xs text-slate-400">Diurutkan otomatis berdasar Tenggat Terdekat & Kesulitan Terbanyak (Min-Heap)</p>
+            </div>
+            <button onclick="switchScreen('tambah_tugas')" class="px-3.5 py-2 rounded-xl bg-babyblue hover:bg-babyblue-dark text-slate-900 font-bold text-xs flex items-center gap-1.5 transition">
+              <i data-lucide="plus" class="w-4 h-4"></i> Tambah Tugas
+            </button>
+          </div>
+
+          <div class="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/50 rounded-xl text-amber-800 dark:text-amber-300 text-xs flex items-center gap-2">
+            <i data-lucide="info" class="w-4 h-4 shrink-0"></i>
+            <span><strong>Sistem PembersihOtomatis:</strong> Tugas yang telah lewat tenggat otomatis dihapus beserta pengingatnya.</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+              <thead>
+                <tr class="border-b border-slate-100 dark:border-slate-800 text-slate-400 font-semibold">
+                  <th class="pb-3">JUDUL TUGAS</th>
+                  <th class="pb-3">MATA KULIAH</th>
+                  <th class="pb-3">SUMBER</th>
+                  <th class="pb-3">TENGGAT</th>
+                  <th class="pb-3">KESULITAN</th>
+                  <th class="pb-3">STATUS</th>
+                  <th class="pb-3 text-right">AKSI</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                ${sortedTasks.map(t => `
+                  <tr class="hover:bg-slate-50 dark:hover:bg-[#0F1A24] transition">
+                    <td class="py-3 font-bold text-slate-800 dark:text-slate-100">${t.title}</td>
+                    <td class="py-3 text-slate-600 dark:text-slate-300">${getCourseName(t.courseId)}</td>
+                    <td class="py-3 text-slate-400">${t.source || '-'}</td>
+                    <td class="py-3 text-slate-600 dark:text-slate-300">${formatDateTime(t.deadline)}</td>
+                    <td class="py-3">${getDifficultyBadgeHtml(t.difficulty)}</td>
+                    <td class="py-3">${getStatusBadgeHtml(t.status, t.deadline)}</td>
+                    <td class="py-3 text-right">
+                      <div class="flex items-center justify-end gap-1">
+                        <button onclick="toggleTaskStatus('${t.id}')" title="Tandai Selesai" class="p-1.5 rounded-lg text-slate-400 hover:text-emerald-500"><i data-lucide="check-circle" class="w-4 h-4"></i></button>
+                        <button onclick="deleteTask('${t.id}')" title="Hapus Tugas" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                      </div>
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function renderLaptopTambahTugas() {
+      return `
+        <div class="max-w-2xl mx-auto bg-white dark:bg-[#152331] p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-5">
+          <div class="border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">Form Tambah Tugas Baru</h3>
+            <p class="text-xs text-slate-400">Pengingat otomatis H-2 akan diset otomatis saat disimpan.</p>
+          </div>
+
+          <form onsubmit="handleTaskFormSubmit(event)" class="space-y-4 text-xs">
+            <div>
+              <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Judul Tugas <span class="text-rose-500">*</span></label>
+              <input type="text" id="taskTitleInput" required placeholder="Contoh: Laporan Praktikum Jaringan" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Mata Kuliah</label>
+                <select id="taskCourseSelect" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+                  ${appData.courses.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                </select>
+              </div>
+
+              <div>
+                <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Sumber Tugas (Opsional)</label>
+                <input type="text" id="taskSourceInput" placeholder="Contoh: e-learning / VLM" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-1 text-slate-700 dark:text-slate-300">Tenggat Waktu <span class="text-rose-500">*</span></label>
+              <input type="datetime-local" id="taskDeadlineInput" required value="${getRelativeDateTime(2, 23, 59)}" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 outline-none focus:ring-2 focus:ring-babyblue">
+            </div>
+
+            <div>
+              <label class="block font-semibold mb-2 text-slate-700 dark:text-slate-300">Tingkat Kesulitan Tugas</label>
+              <div class="grid grid-cols-3 gap-3">
+                <label class="cursor-pointer p-3 rounded-xl border border-emerald-200 bg-[#E6F4EA] text-[#137333] flex items-center gap-2 font-bold">
+                  <input type="radio" name="difficulty" value="1" checked class="accent-emerald-600">
+                  <span>Mudah (1)</span>
+                </label>
+                <label class="cursor-pointer p-3 rounded-xl border border-amber-200 bg-[#FEF7E0] text-[#B06000] flex items-center gap-2 font-bold">
+                  <input type="radio" name="difficulty" value="2" class="accent-amber-600">
+                  <span>Sedang (2)</span>
+                </label>
+                <label class="cursor-pointer p-3 rounded-xl border border-rose-200 bg-[#FCE8E6] text-[#C5221F] flex items-center gap-2 font-bold">
+                  <input type="radio" name="difficulty" value="3" class="accent-rose-600">
+                  <span>Sulit (3)</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4">
+              <button type="button" onclick="switchScreen('tugas')" class="px-5 py-2.5 rounded-xl font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200">Batal</button>
+              <button type="submit" class="px-5 py-2.5 rounded-xl font-bold bg-babyblue hover:bg-babyblue-dark text-slate-900 transition">Simpan Tugas</button>
+            </div>
+          </form>
+        </div>
+      `;
+    }
+
+    function renderLaptopJadwal() {
+      const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Ming'];
+
+      return `
+        <div class="bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-base text-slate-900 dark:text-white">Jadwal Kuliah</h3>
+              <p class="text-xs text-slate-400">Jadwal yang lewat tangganya akan dibersihkan otomatis oleh sistem.</p>
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <!-- Tab Switcher Hari Ini / Minggu Ini -->
+              <div class="bg-slate-100 dark:bg-slate-800 p-1 rounded-xl flex items-center text-xs font-semibold border border-slate-200 dark:border-slate-700">
+                <button onclick="setScheduleTab('hari')" class="px-3 py-1.5 rounded-lg transition ${scheduleTab === 'hari' ? 'bg-white dark:bg-slate-700 text-babyblue-dark dark:text-babyblue shadow-sm' : 'text-slate-500'}">Hari Ini</button>
+                <button onclick="setScheduleTab('minggu')" class="px-3 py-1.5 rounded-lg transition ${scheduleTab === 'minggu' ? 'bg-white dark:bg-slate-700 text-babyblue-dark dark:text-babyblue shadow-sm' : 'text-slate-500'}">Minggu Ini</button>
+              </div>
+
+              <!-- Button Tambah Jadwal (CRUD) -->
+              <button onclick="openScheduleModal()" class="px-3.5 py-2 rounded-xl bg-babyblue hover:bg-babyblue-dark text-slate-900 font-bold text-xs flex items-center gap-1.5 transition">
+                <i data-lucide="plus" class="w-4 h-4"></i> Tambah Jadwal
+              </button>
+            </div>
+          </div>
+
+          ${scheduleTab === 'minggu' ? `
+            <!-- Grid 7 Hari Minggu Ini -->
+            <div class="grid grid-cols-7 gap-3 pt-2">
+              ${days.map(d => `
+                <div class="bg-slate-50 dark:bg-[#0F1A24] p-3 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2 min-h-[220px]">
+                  <div class="text-center font-bold text-xs pb-1 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-400">${d}</div>
+                  
+                  ${appData.schedules.length === 0 ? `<div class="text-[10px] text-slate-400 text-center py-4">-</div>` : `
+                    ${appData.schedules.slice(0, 2).map(s => `
+                      <div class="p-2 bg-white dark:bg-[#152331] rounded-lg border border-slate-100 dark:border-slate-800 shadow-sm text-left relative group">
+                        <p class="font-bold text-[11px] text-slate-800 dark:text-slate-100 truncate">${s.title}</p>
+                        <p class="text-[10px] text-babyblue-dark dark:text-babyblue font-medium mt-0.5">${s.startTime} - ${s.endTime}</p>
+                        <div class="flex items-center gap-1 mt-1 pt-1 border-t border-slate-100 dark:border-slate-800">
+                          <button onclick="openScheduleModal('${s.id}')" class="text-[10px] text-slate-400 hover:text-babyblue-dark"><i data-lucide="edit-3" class="w-3 h-3"></i></button>
+                          <button onclick="deleteSchedule('${s.id}')" class="text-[10px] text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                        </div>
+                      </div>
+                    `).join('')}
+                  `}
+                </div>
+              `).join('')}
+            </div>
+          ` : `
+            <!-- View Timeline Hari Ini -->
+            <div class="space-y-3 max-w-xl py-2">
+              ${appData.schedules.filter(s => s.date === getRelativeDateOnly(0)).length === 0 ? `
+                <p class="text-xs text-slate-400 py-6">Tidak ada jadwal kuliah hari ini.</p>
+              ` : `
+                ${appData.schedules.filter(s => s.date === getRelativeDateOnly(0)).map(s => `
+                  <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border-l-4 border-babyblue-dark flex items-center justify-between">
+                    <div>
+                      <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100">${s.title}</h4>
+                      <p class="text-[11px] text-slate-400 mt-1">${getCourseName(s.courseId)} (${s.startTime} - ${s.endTime})</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                      <button onclick="openScheduleModal('${s.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-babyblue-dark"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                      <button onclick="deleteSchedule('${s.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                  </div>
+                `).join('')}
+              `}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function setScheduleTab(tab) {
+      scheduleTab = tab;
+      renderAllViews();
+    }
+
+    function renderLaptopPengingat() {
+      return `
+        <div class="bg-white dark:bg-[#152331] p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-base text-slate-900 dark:text-white">Pengingat Otomatis & Kustom</h3>
+              <p class="text-xs text-slate-400">Pengingat otomatis dibuat H-2 sebelum tenggat tugas. CRUD pengingat aktif.</p>
+            </div>
+            <button onclick="openReminderModal()" class="px-3.5 py-2 rounded-xl bg-babyblue hover:bg-babyblue-dark text-slate-900 font-bold text-xs flex items-center gap-1.5 transition">
+              <i data-lucide="bell-plus" class="w-4 h-4"></i> Tambah Pengingat Kustom
+            </button>
+          </div>
+
+          ${appData.reminders.length === 0 ? `
+            <div class="py-12 text-center text-xs text-slate-400">Belum ada pengingat aktif.</div>
+          ` : `
+            <div class="space-y-3">
+              ${appData.reminders.map(r => `
+                <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+                      <i data-lucide="bell" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                      <h4 class="font-bold text-xs text-slate-800 dark:text-slate-100">${r.title}</h4>
+                      <p class="text-[11px] text-slate-400 mt-0.5">Waktu Alarm: ${formatDateTime(r.time)} • ${r.note}</p>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <button onclick="openReminderModal('${r.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-babyblue-dark"><i data-lucide="edit-3" class="w-4 h-4"></i></button>
+                    <button onclick="deleteReminder('${r.id}')" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-500"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderLaptopPengaturan() {
+      return `
+        <div class="max-w-xl mx-auto bg-white dark:bg-[#152331] p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm space-y-6">
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">Pengaturan Aplikasi</h3>
+            <p class="text-xs text-slate-400">Manajemen preferensi tampilan & pengelolaan data aplikasi.</p>
+          </div>
+
+          <div class="space-y-4 text-xs">
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <p class="font-bold text-slate-800 dark:text-slate-100">Mode Gelap (Dark Mode)</p>
+                <p class="text-[11px] text-slate-400">Ubah tema latar ke warna gelap (#0F1A24)</p>
+              </div>
+              <button onclick="toggleDarkMode()" class="px-4 py-2 rounded-xl font-bold bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-100">Toggle Mode</button>
+            </div>
+
+            <div class="p-4 rounded-xl bg-slate-50 dark:bg-[#0F1A24] border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div>
+                <p class="font-bold text-slate-800 dark:text-slate-100">Reset Data Aplikasi</p>
+                <p class="text-[11px] text-slate-400">Kembalikan data tugas, jadwal, dan pengingat ke kondisi awal demo.</p>
+              </div>
+              <button onclick="resetDemoData()" class="px-4 py-2 rounded-xl font-bold bg-rose-500 text-white">Reset Data Demo</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    // ----------------------------------------------------
+    // HP MOBILE RENDER HELPER FUNCTIONS (390px Rule)
+    // ----------------------------------------------------
+    function renderHPLayout(screen) {
+      return `
+        <!-- HP Header Ringkas -->
+        <header class="p-4 bg-white dark:bg-[#152331] border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-2">
+            <div class="w-7 h-7 rounded-lg bg-babyblue flex items-center justify-center text-babyblue-dark font-bold">
+              <i data-lucide="calendar-check" class="w-4 h-4 stroke-[2.5]"></i>
+            </div>
+            <span class="font-bold text-sm text-slate-900 dark:text-white">StudyPlan</span>
+          </div>
+          <button onclick="switchScreen('pengingat')" class="p-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 relative">
+            <i data-lucide="bell" class="w-4 h-4"></i>
+            ${appData.reminders.length ? `<span class="w-2 h-2 rounded-full bg-rose-500 absolute top-1 right-1"></span>` : ''}
+          </button>
+        </header>
+
+        <!-- HP Screen Content Area -->
+        <main class="flex-1 overflow-auto p-4 space-y-4">
+          ${renderHPScreenBody(screen)}
+        </main>
+
+        <!-- HP Floating Action Button (+) -->
+        <button onclick="switchScreen('tambah_tugas')" class="fixed bottom-16 right-5 w-12 h-12 rounded-full bg-babyblue hover:bg-babyblue-dark text-slate-900 flex items-center justify-center shadow-lg font-bold z-30">
+          <i data-lucide="plus" class="w-6 h-6"></i>
+        </button>
+
+        <!-- HP Bottom Navigation Bar (5 Icons) -->
+        <nav class="bg-white dark:bg-[#152331] border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-5 py-2 px-1 text-[10px] font-semibold text-slate-500 dark:text-slate-400 shrink-0 z-30">
+          ${renderHPNavItem('beranda', 'home', 'Beranda', screen)}
+          ${renderHPNavItem('tugas', 'check-square', 'Tugas', screen)}
+          ${renderHPNavItem('jadwal', 'calendar', 'Jadwal', screen)}
+          ${renderHPNavItem('pengingat', 'bell', 'Pengingat', screen)}
+          ${renderHPNavItem('pengaturan', 'more-horizontal', 'Lainnya', screen)}
+        </nav>
+      `;
+    }
+
+    function renderHPNavItem(key, icon, label, current) {
+      const active = key === current;
+      return `
+        <button onclick="switchScreen('${key}')" class="flex flex-col items-center gap-1 ${active ? 'text-babyblue-dark dark:text-babyblue font-bold' : ''}">
+          <i data-lucide="${icon}" class="w-4 h-4"></i>
+          <span>${label}</span>
+        </button>
+      `;
+    }
+
+    function renderHPScreenBody(screen) {
+      if (screen === 'beranda') return renderHPBeranda();
+      if (screen === 'matakuliah') return renderLaptopMataKuliah();
+      if (screen === 'tugas') return renderHPDaftarTugas();
+      if (screen === 'tambah_tugas') return renderLaptopTambahTugas();
+      if (screen === 'jadwal') return renderLaptopJadwal();
+      if (screen === 'pengingat') return renderLaptopPengingat();
+      if (screen === 'pengaturan') return renderHPPengaturan();
+      return '';
+    }
+
+    function renderHPBeranda() {
+      const pendingTasks = appData.tasks.filter(t => t.status === 'belum');
+      const sortedPriorities = getSortedTasks(pendingTasks);
+
+      return `
+        <div class="space-y-4 text-xs">
+          <div>
+            <h3 class="font-bold text-base text-slate-900 dark:text-white">Beranda Mahasiswa</h3>
+            <p class="text-[11px] text-slate-400">Ringkasan aktivitas hari ini</p>
+          </div>
+
+          <!-- Horizontal Scroll Stats Cards -->
+          <div class="flex gap-3 overflow-x-auto no-scrollbar pb-1">
+            <div class="bg-white dark:bg-[#152331] p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 min-w-[130px] shrink-0">
+              <span class="text-[10px] text-slate-400">Tugas Belum</span>
+              <p class="text-xl font-black mt-1 text-slate-900 dark:text-white">${pendingTasks.length}</p>
+            </div>
+            <div class="bg-white dark:bg-[#152331] p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 min-w-[130px] shrink-0">
+              <span class="text-[10px] text-slate-400">Pengingat</span>
+              <p class="text-xl font-black mt-1 text-slate-900 dark:text-white">${appData.reminders.length}</p>
+            </div>
+          </div>
+
+          <!-- HP Tugas Terdekat List -->
+          <div class="bg-white dark:bg-[#152331] p-4 rounded-xl border border-slate-100 dark:border-slate-800 space-y-3">
+            <h4 class="font-bold text-xs text-slate-900 dark:text-white">Tugas Terdekat</h4>
+            ${sortedPriorities.length === 0 ? `<p class="text-[11px] text-slate-400">Tidak ada tugas.</p>` : `
+              <div class="space-y-2">
+                ${sortedPriorities.slice(0, 3).map(t => `
+                  <div class="p-3 bg-slate-50 dark:bg-[#0F1A24] rounded-lg border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <p class="font-bold text-slate-800 dark:text-slate-100">${t.title}</p>
+                      <p class="text-[10px] text-slate-400 mt-0.5">${getCourseName(t.courseId)}</p>
+                    </div>
+                    <button onclick="toggleTaskStatus('${t.id}')" class="p-1.5 rounded-lg bg-slate-200 dark:bg-slate-800"><i data-lucide="check" class="w-3.5 h-3.5"></i></button>
+                  </div>
+                `).join('')}
+              </div>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHPDaftarTugas() {
+      const sortedTasks = getSortedTasks(appData.tasks);
+      return `
+        <div class="space-y-3 text-xs">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-slate-900 dark:text-white">Daftar Tugas</h3>
+            <button onclick="switchScreen('tambah_tugas')" class="text-xs text-babyblue-dark font-bold">+ Tambah</button>
+          </div>
+
+          <div class="space-y-2">
+            ${sortedTasks.map(t => `
+              <div class="bg-white dark:bg-[#152331] p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                  <h4 class="font-bold text-slate-800 dark:text-slate-100">${t.title}</h4>
+                  ${getDifficultyBadgeHtml(t.difficulty)}
+                </div>
+                <p class="text-[11px] text-slate-400">${getCourseName(t.courseId)} • Tenggat: ${formatDateTime(t.deadline)}</p>
+                <div class="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+                  ${getStatusBadgeHtml(t.status, t.deadline)}
+                  <div class="flex items-center gap-2">
+                    <button onclick="toggleTaskStatus('${t.id}')" class="text-emerald-500 font-bold text-[11px]">Selesai</button>
+                    <button onclick="deleteTask('${t.id}')" class="text-rose-500 font-bold text-[11px]">Hapus</button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderHPPengaturan() {
+      return `
+        <div class="space-y-4 text-xs">
+          <h3 class="font-bold text-sm text-slate-900 dark:text-white">Menu Lainnya</h3>
+          <div class="space-y-2">
+            <button onclick="switchScreen('matakuliah')" class="w-full p-3.5 bg-white dark:bg-[#152331] rounded-xl border border-slate-100 dark:border-slate-800 font-bold text-left text-slate-800 dark:text-slate-100">Kelola Mata Kuliah</button>
+            <button onclick="toggleDarkMode()" class="w-full p-3.5 bg-white dark:bg-[#152331] rounded-xl border border-slate-100 dark:border-slate-800 font-bold text-left text-slate-800 dark:text-slate-100">Toggle Mode Gelap</button>
+            <button onclick="resetDemoData()" class="w-full p-3.5 bg-rose-50 dark:bg-rose-950/40 text-rose-600 rounded-xl font-bold text-left">Reset Data Demo</button>
+          </div>
+        </div>
+      `;
+    }
+
+    // ----------------------------------------------------
+    // INITIALIZATION & EVENT LISTENERS
+    // ----------------------------------------------------
+    function renderAllViews() {
+      const laptopRoot = document.getElementById('laptopAppRoot');
+      const hpRoot = document.getElementById('hpAppRoot');
+
+      laptopRoot.innerHTML = renderLaptopLayout(currentScreen);
+      hpRoot.innerHTML = renderHPLayout(currentScreen);
+
+      lucide.createIcons();
+    }
+
+    window.onload = function() {
+      renderAllViews();
+    };
+  </script>
+</body>
+</html>
